@@ -25,9 +25,12 @@ function tileBackgroundPosition(tile: number) {
 export function PuzzleScreen({ onBack }: PuzzleScreenProps) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [board, setBoard] = useState<PuzzleBoard>(() => createShuffledBoard())
+  const [failedImages, setFailedImages] = useState<Record<string, boolean>>({})
   const [moveCount, setMoveCount] = useState(0)
 
   const currentImage = PUZZLE_IMAGES[currentImageIndex]
+  const usingFallbackImage = failedImages[currentImage.src] ?? false
+  const resolvedImageSrc = usingFallbackImage ? currentImage.fallbackSrc : currentImage.src
   const isSolved = isBoardSolved(board)
 
   const resetGame = () => {
@@ -50,6 +53,19 @@ export function PuzzleScreen({ onBack }: PuzzleScreenProps) {
 
     setBoard(moveTile(board, tileIndex))
     setMoveCount((currentCount) => currentCount + 1)
+  }
+
+  const handlePreviewError = () => {
+    setFailedImages((currentState) => {
+      if (currentState[currentImage.src]) {
+        return currentState
+      }
+
+      return {
+        ...currentState,
+        [currentImage.src]: true,
+      }
+    })
   }
 
   return (
@@ -95,7 +111,7 @@ export function PuzzleScreen({ onBack }: PuzzleScreenProps) {
                       aria-label={`Mover pieza ${tile + 1}`}
                       style={{
                         backgroundColor: currentImage.accent,
-                        backgroundImage: `url(${currentImage.src})`,
+                        backgroundImage: `url(${resolvedImageSrc})`,
                         backgroundPosition: tileBackgroundPosition(tile),
                         backgroundSize: `${GRID_SIZE * 100}% ${GRID_SIZE * 100}%`,
                       }}
@@ -130,8 +146,9 @@ export function PuzzleScreen({ onBack }: PuzzleScreenProps) {
             </div>
             <img
               className="preview-card__image"
-              src={currentImage.src}
+              src={resolvedImageSrc}
               alt={`Referencia ${currentImage.name}`}
+              onError={usingFallbackImage ? undefined : handlePreviewError}
             />
             <p className="preview-card__copy">
               Usa esta imagen para completar el tablero lo mas rapido posible.
