@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { BackButton } from '../../components/BackButton'
 import {
   createSlotRound,
@@ -21,6 +21,38 @@ type ReelProps = {
 
 const LIGHTS = Array.from({ length: 6 }, (_, index) => index)
 const REEL_INDEXES = Array.from({ length: SLOT_REEL_COUNT }, (_, index) => index)
+const OUTCOME_MODAL_AUTO_CLOSE = 3200
+const CONFETTI_PIECES = [
+  { left: '8%', color: '#ff5f45', delay: '0s', duration: '2.7s', rotation: '-16deg' },
+  { left: '18%', color: '#ffd166', delay: '0.2s', duration: '3s', rotation: '12deg' },
+  { left: '26%', color: '#fff3d6', delay: '0.05s', duration: '2.4s', rotation: '-10deg' },
+  { left: '34%', color: '#ff8c69', delay: '0.35s', duration: '2.9s', rotation: '18deg' },
+  { left: '42%', color: '#ffe39a', delay: '0.15s', duration: '2.6s', rotation: '-22deg' },
+  { left: '50%', color: '#ffffff', delay: '0.4s', duration: '3.1s', rotation: '10deg' },
+  { left: '58%', color: '#ff5f45', delay: '0.1s', duration: '2.5s', rotation: '-14deg' },
+  { left: '66%', color: '#ffd166', delay: '0.3s', duration: '3s', rotation: '20deg' },
+  { left: '74%', color: '#fff3d6', delay: '0.12s', duration: '2.8s', rotation: '-18deg' },
+  { left: '82%', color: '#ff8c69', delay: '0.45s', duration: '2.7s', rotation: '16deg' },
+  { left: '90%', color: '#ffe39a', delay: '0.22s', duration: '3.05s', rotation: '-12deg' },
+] as const
+
+type ConfettiStyle = CSSProperties & {
+  '--confetti-color': string
+  '--confetti-delay': string
+  '--confetti-duration': string
+  '--confetti-left': string
+  '--confetti-rotation': string
+}
+
+function getConfettiStyle(piece: (typeof CONFETTI_PIECES)[number]): ConfettiStyle {
+  return {
+    '--confetti-color': piece.color,
+    '--confetti-delay': piece.delay,
+    '--confetti-duration': piece.duration,
+    '--confetti-left': piece.left,
+    '--confetti-rotation': piece.rotation,
+  }
+}
 
 function Reel({ icon, isSpinning }: ReelProps) {
   return (
@@ -74,6 +106,7 @@ export function SlotMachineScreen({ onBack }: SlotMachineScreenProps) {
   const [hasStarted, setHasStarted] = useState(false)
   const [isLeverPulled, setIsLeverPulled] = useState(false)
   const [gameResult, setGameResult] = useState<SlotOutcome | null>(null)
+  const [isOutcomeModalOpen, setIsOutcomeModalOpen] = useState(false)
   const timeoutIdsRef = useRef<number[]>([])
 
   const clearTimeouts = () => {
@@ -90,6 +123,14 @@ export function SlotMachineScreen({ onBack }: SlotMachineScreenProps) {
   }, [])
 
   const isSpinning = spinning.some(Boolean)
+  const outcomeTitle = gameResult?.isWinner ? 'Ganaste' : 'Segui intentando'
+  const outcomeMessage = gameResult?.isWinner
+    ? 'Tu giro termino con una combinacion ganadora.'
+    : 'Esta vez no hubo combinacion ganadora.'
+
+  const closeOutcomeModal = () => {
+    setIsOutcomeModalOpen(false)
+  }
 
   const startSpin = () => {
     if (isSpinning) {
@@ -109,6 +150,7 @@ export function SlotMachineScreen({ onBack }: SlotMachineScreenProps) {
 
     setHasStarted(true)
     setGameResult(null)
+    setIsOutcomeModalOpen(false)
     setSpinning(new Array(SLOT_REEL_COUNT).fill(true))
 
     REEL_INDEXES.forEach((reelIndex) => {
@@ -123,6 +165,12 @@ export function SlotMachineScreen({ onBack }: SlotMachineScreenProps) {
 
           if (reelIndex === SLOT_REEL_COUNT - 1) {
             setGameResult(round.outcome)
+            setIsOutcomeModalOpen(true)
+            timeoutIdsRef.current.push(
+              window.setTimeout(() => {
+                setIsOutcomeModalOpen(false)
+              }, OUTCOME_MODAL_AUTO_CLOSE),
+            )
           }
         }, SLOT_CONFIG.SPIN_DURATION + reelIndex * SLOT_CONFIG.REEL_DELAY),
       )
@@ -186,6 +234,49 @@ export function SlotMachineScreen({ onBack }: SlotMachineScreenProps) {
               </div>
             </div>
           </div>
+
+          {gameResult && isOutcomeModalOpen ? (
+            <div className="slot-machine-ref__modal-backdrop" role="presentation">
+              <div
+                className={`slot-machine-ref__modal${
+                  gameResult.isWinner ? ' slot-machine-ref__modal--winner' : ''
+                }`}
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="slot-machine-result-title"
+              >
+                {gameResult.isWinner ? (
+                  <div className="slot-machine-ref__confetti" aria-hidden="true">
+                    {CONFETTI_PIECES.map((piece, index) => (
+                      <span
+                        key={`${piece.left}-${index}`}
+                        className="slot-machine-ref__confetti-piece"
+                        style={getConfettiStyle(piece)}
+                      />
+                    ))}
+                  </div>
+                ) : null}
+
+                <div className="slot-machine-ref__modal-copy">
+                  <p className="slot-machine-ref__modal-eyebrow">
+                    {gameResult.isWinner ? 'Resultado ganador' : 'Resultado del giro'}
+                  </p>
+                  <h2 id="slot-machine-result-title" className="slot-machine-ref__modal-title">
+                    {outcomeTitle}
+                  </h2>
+                  <p className="slot-machine-ref__modal-text">{outcomeMessage}</p>
+                </div>
+
+                <button
+                  className="slot-machine-ref__modal-close"
+                  type="button"
+                  onClick={closeOutcomeModal}
+                >
+                  Cerrar
+                </button>
+              </div>
+            </div>
+          ) : null}
         </div>
       </div>
     </section>

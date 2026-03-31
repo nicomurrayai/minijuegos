@@ -54,7 +54,7 @@ export function MenuScreen({ onSelect }: MenuScreenProps) {
             <h1 className="display-title menu-screen__title">MINIJUEGOS</h1>
             <p className="menu-screen__summary">
               Una seleccion de minijuegos listos para activaciones, campañas y
-              eventos. Disenados para captar atencion, generar participacion y
+              eventos. Disenados para captar atención, generar participación y
               adaptarse a distintas marcas.
             </p>
 
