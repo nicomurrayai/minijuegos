@@ -2,6 +2,7 @@ import { startTransition, useState } from 'react'
 import { MenuScreen } from './components/MenuScreen'
 import { PuzzleScreen } from './features/puzzle/PuzzleScreen'
 import { SimonScreen } from './features/simon/SimonScreen'
+import { SlotMachineScreen } from './features/slotMachine/SlotMachineScreen'
 import type { Screen } from './types'
 
 function App() {
@@ -15,6 +16,8 @@ function App() {
 
   const renderScreen = () => {
     switch (screen) {
+      case 'slot-machine':
+        return <SlotMachineScreen onBack={() => navigate('menu')} />
       case 'simon':
         return <SimonScreen onBack={() => navigate('menu')} />
       case 'puzzle':
